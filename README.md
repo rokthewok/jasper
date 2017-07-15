@@ -1,5 +1,5 @@
 # Jasper
-#### A Jasper-of-all-trades, master of none
+### A Jasper-of-all-trades, master of none
 ## Introduction
 Jasper is a flexible Discord Bot, here to tend to your every whim.
 ## Features
