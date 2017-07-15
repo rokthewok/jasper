@@ -1,6 +1,6 @@
 """ Application entry point """
 
-import requests
+import jasper.discord.discord
 
 
 def main():
