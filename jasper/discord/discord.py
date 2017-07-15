@@ -40,7 +40,7 @@ class Discord(object):
             return response.json()  # return message object from Discord
         else:
             raise IOError(string.Template("Failed to send a message to Discord channel "
-                                          "$(channel). Response code: $(code)").substitute(channel=channel_id,
+                                          "${channel}. Response code: ${code}").substitute(channel=channel_id,
                                                                                            code=response.status_code))
 
 
