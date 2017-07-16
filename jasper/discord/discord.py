@@ -275,8 +275,7 @@ class Gateway(object):
         await self._connect()
         while await self._is_running():
             # here is the main state machine
-            data = await self._websocket.recv()
-            data = json.loads(data)
+            data = json.loads(await self._websocket.recv())
             if GatewayOpCodes.HELLO.value == data["op"]:
                 # now, start up the heartbeat
                 self._heartbeat = Heartbeat(data["d"]["heartbeat_interval"] / 1000.0, self._websocket)

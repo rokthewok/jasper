@@ -5,6 +5,24 @@ import functools
 import jasper.discord.discord
 
 
+class JasperMessageHandler(object):
+    """ Discord message create event handler for Jasper operations """
+
+    def __init__(self, discord):
+        """ Constructor
+
+        Args:
+            discord:  A :py:class:`jasper.discord.discord.Discord` instance, used to send messages
+        """
+        self._discord = discord
+
+    async def do_remind(self, data):
+        """ Do the remind me app stuff """
+        pass
+
+    async def __call__(self, *args, **kwargs):
+        pass
+
 async def make_message_handler(discord):
     async def message_handler():
         # do message stuff here
