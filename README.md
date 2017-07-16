@@ -10,3 +10,4 @@ Currently, none :/
 - Pokemon hunter: a Discord chat-enabled Pokemon game
 - Alexa integration
 - Play-by-chat chess
+- Browser-based admin interface 
