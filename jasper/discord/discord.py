@@ -55,7 +55,7 @@ class Discord(object):
 
     def __init__(self, auth_token):
         self._auth_token = auth_token
-        self._gateway = Gateway(auth_token, 5)  # TODO make gateway version configurable
+        self._gateway = Gateway(auth_token, 6)  # TODO make gateway version configurable
         self._event_handlers = dict()
 
     async def send_message(self, channel_id, content, text_to_speech=False):  # TODO make async

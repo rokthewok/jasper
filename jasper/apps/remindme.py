@@ -1,4 +1,3 @@
 """ Remind Me! App for Jasper """
 
-import psycopg2
-
+import jasper.models
