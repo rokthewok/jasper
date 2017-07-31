@@ -3,8 +3,17 @@
 import sqlalchemy
 import sqlalchemy.orm
 import datetime
+import enum
 from contextlib import contextmanager
 from jasper.models import Base
+
+
+class RecurrenceOptions(enum.Enum):
+    """ Types of recurrence for recurring reminders/events """
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
 
 
 class Reminder(Base):
@@ -33,9 +42,22 @@ class RemindMeAccess(object):
     """ Convenience query wrapper for the RemindMe app """
 
     def __init__(self, engine=None, **kwargs):
+        """ Constructor
+
+        Args:
+            engine:      Optional pre-created SQLAlchemy db engine. Engine
+                         will be created if none is provided
+            **dialect:   Database dialect, e.g. mysql, postgresql
+            **driver:    Database driver, e.g. mysqlconnector, psycopg2
+            **user:      Username for db connection
+            **password:  Password for given user
+            **host:      Hostname for database
+            **port:      Database port
+            **dbname:    Database name
+        """
         self._engine = engine
         if not self._engine:
-            self._engine = sqlalchemy.create_engine()
+            self._engine = sqlalchemy.create_engine("".format())
         self.SessionType = sqlalchemy.orm.sessionmaker(bind=self._engine)
 
     @contextmanager
@@ -46,13 +68,30 @@ class RemindMeAccess(object):
         session.close()
 
     def get_future_reminders(self):
+        """ Retrieve all reminders set to occur after the current time
+
+        Returns:
+            a list of Reminder objects of reminders set to occur in the future
+        """
         with self._session() as session:
             return session.query(Reminder).filter(Reminder.reminder_date > datetime.datetime.now()).all()
 
     def get_reminders_by_user(self, user):
+        """ Retrieve all reminders for a given user ID
+
+        Args:
+            user:   Discord user ID
+        Returns:
+            a list of Reminder objects for the given user ID
+        """
         with self._session() as session:
             return session.query(Reminder).filter(Reminder.user_id == user).all()
 
     def delete_reminder(self, reminder_id):
+        """ Delete a reminder
+
+        Args:
+            reminder_id:   ID of the reminder to delete
+        """
         with self._session() as session:
             session.delete(Reminder).filter(Reminder.id == reminder_id)
