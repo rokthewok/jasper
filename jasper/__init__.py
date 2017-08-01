@@ -1,1 +1,1 @@
-""" Jasper application """
+""" Jasper: the Discord bot of many trades """

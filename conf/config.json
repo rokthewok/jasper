@@ -1,0 +1,6 @@
+{
+  "DB_DIALECT": "postgresql",
+  "DB_DRIVER": "psycopg2",
+  "DB_HOST": "localhost",
+  "DB_NAME": "jasper"
+}

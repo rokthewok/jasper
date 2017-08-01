@@ -20,7 +20,7 @@ class Reminder(Base):
     """ Represents a reminder to be posted in Discord """
     __tablename__ = "reminders"
 
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     channel_id = sqlalchemy.Column(sqlalchemy.Text)
     user_id = sqlalchemy.Column(sqlalchemy.Text)
     reminder_date = sqlalchemy.Column(sqlalchemy.DateTime)
@@ -38,7 +38,7 @@ class Reminder(Base):
                                                        self.recurrence, self.active)
 
 
-class RemindMeAccess(object):
+class RemindMeAccessor(object):
     """ Convenience query wrapper for the RemindMe app """
 
     def __init__(self, engine=None, **kwargs):
@@ -48,16 +48,18 @@ class RemindMeAccess(object):
             engine:      Optional pre-created SQLAlchemy db engine. Engine
                          will be created if none is provided
             **dialect:   Database dialect, e.g. mysql, postgresql
-            **driver:    Database driver, e.g. mysqlconnector, psycopg2
             **user:      Username for db connection
             **password:  Password for given user
             **host:      Hostname for database
-            **port:      Database port
             **dbname:    Database name
         """
         self._engine = engine
         if not self._engine:
-            self._engine = sqlalchemy.create_engine("".format())
+            self._engine = sqlalchemy.create_engine("{}://{}:{}@{}/{}".format(kwargs["dialect"],
+                                                                              kwargs["user"],
+                                                                              kwargs["password"],
+                                                                              kwargs["host"],
+                                                                              kwargs["dbname"]))
         self.SessionType = sqlalchemy.orm.sessionmaker(bind=self._engine)
 
     @contextmanager

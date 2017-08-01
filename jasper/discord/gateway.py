@@ -7,16 +7,14 @@ import sys
 import json
 import enum
 import asyncio
+from jasper.discord import _BASE_URL
 
 
 __author__ = "John Ruffer"
 __email__ = "jqruffer@gmail.com"
 
 
-_BASE_URL = "https://discordapp.com/api"
-
-
-class DiscordEvents(enum.Enum):
+class GatewayEvents(enum.Enum):
     """ Possible event types received by the gateway """
     READY = "READY"
     RESUMED = "RESUMED"
@@ -48,73 +46,6 @@ class DiscordEvents(enum.Enum):
     USER_UPDATE = "USER_UPDATE"
     VOICE_STATE_UPDATE = "VOICE_STATE_UPDATE"
     VOICE_SERVER_UPDATE = "VOICE_SERVER_UPDATE"
-
-
-class Discord(object):
-    """ Main class used for interacting with Discord; meant for use with a bot user """
-
-    def __init__(self, auth_token):
-        self._auth_token = auth_token
-        self._gateway = Gateway(auth_token, 6)  # TODO make gateway version configurable
-        self._event_handlers = dict()
-
-    async def send_message(self, channel_id, content, text_to_speech=False):  # TODO make async
-        """ Send a message to a given channel
-
-        Args:
-            channel_id:     The id of the channel to send the message to
-            content:        Text body of the message
-            text_to_speech: Boolean describing whether or not this is a text-to-speech message
-        Returns:
-            The JSON message object returned from the Discord endpoint
-        Raises:
-            IOError: The request fails in some manner
-        """
-        message = {
-            "content": content,
-            "text_to_speech": text_to_speech,
-        }
-        headers = {
-            "Authorization": "Bot {}".format(self._auth_token)
-        }
-        response = requests.post("{}/channels/{}/messages".format(_BASE_URL, channel_id),
-                                 json=message, headers=headers)  # TODO async
-        if requests.codes.ok == response.status_code:
-            return response.json()  # return message object from Discord
-        else:
-            raise IOError(string.Template("Failed to send a message to Discord channel "
-                                          "${channel}. Response code: ${code}").substitute(channel=channel_id,
-                                                                                           code=response.status_code))
-
-    def register_handler(self, event_type, async_handler):
-        """ Register a handler for a given event type. Handler MUST be declared as a coroutine (async).
-            Calling `register_handler` after the Discord event loop has started will result in undefined behavior
-
-            Args:
-                event_type:     The type of event to register on. There may be more than one handler registered
-                                to an event type. Event type is one of :py:class:`DiscordEvents`
-                async_handler:  The :py:module:`asyncio` coroutine to be registered as the handler for the given event
-            Returns:
-                Nothing
-        """
-        if not self._event_handlers.get(event_type):
-            self._event_handlers[event_type] = list()
-        self._event_handlers[event_type].append(async_handler)
-
-    async def _gateway_handler(self, payload):
-        """ Handler to be used for gateway messages received
-
-        Args:
-            payload:   A dictionary object parsed from the JSON payload provided by the gateway
-        """
-        if len(self._event_handlers.get(payload["t"], list())) > 0:
-            await asyncio.wait(self._event_handlers[payload["t"]])
-        else:
-            print("no handler for event type: {}".format(payload["t"]))
-
-    def start(self):
-        """ Start the gate  way event loop"""
-        self._gateway.start(self._gateway_handler)
 
 
 def make_payload_json(op, data, **kwargs):
@@ -207,7 +138,7 @@ class Heartbeat(object):
 class Gateway(object):
     """ Websockets gateway manager for Discord events """
 
-    def __init__(self, auth_token, version):
+    def __init__(self, auth_token, version=6):
         """ Constructor
 
         Args:
@@ -220,6 +151,7 @@ class Gateway(object):
         self._websocket = None
         self._runlock = asyncio.Lock()
         self._running = True
+        self._event_handlers = dict()
 
     def _get_gateway(self):
         """ Retrieve the gateway URL for making a websocket connection """
@@ -301,8 +233,38 @@ class Gateway(object):
                 print("Got some other message; data: {}".format(data))
                 pass
 
-    def start(self, gateway_handler):
+
+    def register_handler(self, event_type, async_handler):
+        """ Register a handler for a given event type. Handler MUST be declared as a coroutine (async).
+            Calling `register_handler` after the Discord event loop has started will result in undefined behavior
+
+            Args:
+                event_type:     The type of event to register on. There may be more than one handler registered
+                                to an event type. Event type is one of :py:class:`DiscordEvents`
+                async_handler:  The :py:module:`asyncio` coroutine to be registered as the handler for the given event
+            Returns:
+                Nothing
+        """
+        if not self._event_handlers.get(event_type):
+            self._event_handlers[event_type] = list()
+        self._event_handlers[event_type].append(async_handler)
+
+    async def _gateway_handler(self, payload):
+        """ Handler to be used for gateway messages received
+
+        Args:
+            payload:   A dictionary object parsed from the JSON payload provided by the gateway
+        """
+        if self._event_handlers.get(payload["t"], None) is not None:
+            handlers = self._event_handlers[payload["t"]]
+            for h in handlers:
+                await h(payload["d"])
+        else:
+            print("no handlers for event type: {}".format(payload["t"]))
+
+    def start(self):
+        """ Start the gateway event loop """
         print("Connecting to gateway and starting event loop for gateway handler")
         event_loop = asyncio.get_event_loop()
-        event_loop.run_until_complete(self._connect_and_listen(gateway_handler))
+        event_loop.run_until_complete(self._connect_and_listen(self._gateway_handler))
         self._websocket.close()
