@@ -11,7 +11,7 @@ class Discord(object):
     def __init__(self, auth_token):
         self._auth_token = auth_token
 
-    async def send_message(self, channel_id, content, text_to_speech=False):  # TODO make async
+    def send_message(self, channel_id, content, text_to_speech=False):  # TODO make async
         """ Send a message to a given channel
 
         Args:

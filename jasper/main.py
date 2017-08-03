@@ -5,6 +5,7 @@ import functools
 import re
 import sqlalchemy
 import json
+import asyncio
 from jasper.discord.gateway import Gateway
 from jasper.discord.gateway import GatewayEvents
 from jasper.discord.api import Discord
@@ -48,6 +49,15 @@ class JasperMessageHandler(object):
 
 
 def make_db_engine(config, user, password):
+    """ Make a SQLAlchemy database engine object
+
+    Args:
+        config:   dictionary configuration object with `DB_DIALECT`, `DB_HOST`, and `DB_NAME` populated
+        user:     Database username
+        password: Password for given user
+    Returns:
+        a `sqlalchemy.Engine` object
+    """
     return sqlalchemy.create_engine("{}://{}:{}@{}/{}".format(config["DB_DIALECT"], user, password,
                                                               config["DB_HOST"], config["DB_NAME"]))
 
@@ -58,17 +68,19 @@ def get_config():
 
 def main():
     """ Main function - all which happens, starts here """
-    try:
-        auth_token = os.environ["DISCORD_AUTH_TOKEN"]
+    auth_token = os.environ["DISCORD_AUTH_TOKEN"]
 
-        gateway = Gateway(auth_token)
-        discord = Discord(auth_token)
-        config = get_config()
-        engine = make_db_engine(config, os.environ["JASPER_PSQL_USER"], os.environ["JASPER_PSQL_PW"])
-        handler = JasperMessageHandler(discord, "!jasper",
-                                       [RemindMe(discord, RemindMeAccessor(engine=engine))])
-        gateway.register_handler(GatewayEvents.MESSAGE_CREATE.value, handler)
+    gateway = Gateway(auth_token)
+    discord = Discord(auth_token)
+    config = get_config()
+    engine = make_db_engine(config, os.environ["JASPER_PSQL_USER"], os.environ["JASPER_PSQL_PW"])
+    handler = JasperMessageHandler(discord, "!jasper",
+                                   [RemindMe(discord, RemindMeAccessor(engine=engine))])
+    gateway.register_handler(GatewayEvents.MESSAGE_CREATE.value, handler)
+
+    try:
         gateway.start()
     except Exception as e:
+        asyncio.wait(gateway.stop)
         print(e)
         raise e

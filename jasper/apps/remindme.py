@@ -39,9 +39,14 @@ class RemindMe(object):
                                                  DateFormats.ISO_DATETIME.value), flags=re.IGNORECASE)
 
     def _add_reminder(self, channel, user, reminder, reminder_date, recurrence_info=None):
+        message = "Okay , @{user}, I am setting a reminder: {reminder} for {date}" \
+            .format(user=user, reminder=reminder,
+                    date=reminder_date.strftime(DateParseStrings.EN_US.value))
+
         print("adding reminder for channel: {}, user: {}, reminder: {} "
               "reminder_date: {}, recurrence_info: {}".format(channel, user, reminder,
                                                               reminder_date, recurrence_info))
+        self._discord.send_message(channel, message)
 
     def _poll_for_events(self):
         pass
@@ -74,6 +79,10 @@ class RemindMe(object):
 
 
     def __call__(self, payload):
-        result = self._parse_message(payload["content"])
-        self._add_reminder(channel=payload["channel_id"], user=payload["author"]["id"],
-                           reminder=result["reminder"], reminder_date=result["datetime"])
+        try:
+            result = self._parse_message(payload["content"])
+            self._add_reminder(channel=payload["channel_id"], user=payload["author"]["id"],
+                               reminder=result["reminder"], reminder_date=result["datetime"])
+        except ValueError as e:
+            print(e)
+            self._discord.send_message(payload["channel_id"], "Sorry, that was an invalid reminder format.")
