@@ -97,3 +97,10 @@ class RemindMeAccessor(object):
         """
         with self._session() as session:
             session.delete(Reminder).filter(Reminder.id == reminder_id)
+
+    def add_reminder(self, channel_id, user_id, reminder_date,
+                     reminder, recurrence=None, active=True):
+        with self._session() as session:
+            Reminder(channel_id=channel_id, user_id=user_id, reminder_date=reminder_date,
+                     reminder=reminder, recurrence=recurrence, active=active)
+            session.add(Reminder)

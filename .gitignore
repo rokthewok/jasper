@@ -1,2 +1,7 @@
 *.pyc
 __pycache__
+*.egg-info
+SECRET
+.idea
+.cache
+.jasper

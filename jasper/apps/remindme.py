@@ -15,6 +15,7 @@ class DateFormats(enum.Enum):
             "|Jul(y)?|Aug(ust)?|Sep(tember)?|Oct(ober)?|Nov(ember)?|Dec(ember)?)) " \
             "(?P<date>[0-3][0-9]), (?P<year>2[0-9][0-9][0-9]) at " \
             "(?P<time>[0-1][0-9]:[0-5][0-9]:[0-5][0-9] ?(A|P)M)"
+    DISTANCE = "in \d+ (hours|days|weeks|months|years)"
 
 
 class DateParseStrings(enum.Enum):
@@ -34,9 +35,8 @@ class RemindMe(object):
         """
         self._discord = discord
         self._db_accessor = accessor if accessor else RemindMeAccessor()
-        self._message_regex = re.compile("remindme: (?P<reminder>.*) on (?P<datetime>({}|{}))"
-                                         .format(DateFormats.EN_US.value,
-                                                 DateFormats.ISO_DATETIME.value), flags=re.IGNORECASE)
+        self._message_regex = re.compile("remindme: (?P<reminder>.*) (on)? (?P<datetime>({}|{}))"
+                                         .format(*[f.value for f in DateFormats]), flags=re.IGNORECASE)
 
     def _add_reminder(self, channel, user, reminder, reminder_date, recurrence_info=None):
         message = "Okay , @{user}, I am setting a reminder: {reminder} for {date}" \
@@ -46,10 +46,24 @@ class RemindMe(object):
         print("adding reminder for channel: {}, user: {}, reminder: {} "
               "reminder_date: {}, recurrence_info: {}".format(channel, user, reminder,
                                                               reminder_date, recurrence_info))
+        self._db_accessor.
         self._discord.send_message(channel, message)
 
     def _poll_for_events(self):
         pass
+
+    def _parse_distance_time(self, date_string):
+        """ Parse out a timestamp which corresponds to some date by some distance
+            specified, e.g. "in 3 days".
+
+        Args:
+            date_string:   The date to be parsed
+        Returns:
+            a datetime object if the format is valid, else None
+        """
+        matches = re.match("in (?P<quantity>\d+) (?P<magnitude>hours|days|weeks|months|years)", date_string)
+        if matches:
+            today = datetime.datetime.now()
 
     def _get_datetime(self, date_string):
         timestamp = None
@@ -58,7 +72,7 @@ class RemindMe(object):
                 timestamp = datetime.datetime.strptime(date_string, date_format.value)
             except ValueError as e:
                 pass
-        return timestamp
+        return timestamp if timestamp else self._parse_distance_time(date_string)
 
 
     def _parse_message(self, message):
